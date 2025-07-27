@@ -37,14 +37,17 @@ export default function GroupPage() {
         let paid = 0;
   
         fetched.forEach((exp) => {
-          const splitCount = exp.splitWith?.length || 1;
-          const share = parseFloat(exp.amount) / splitCount;
-          total += parseFloat(exp.amount);
-  
-          Object.entries(exp.paid || {}).forEach(([uid, isPaid]) => {
-            if (isPaid) paid += share;
+            const amount = parseFloat(exp.amount);
+            const splitCount = exp.splitWith?.length || 1;
+            const share = amount / splitCount;
+            total += amount;
+          
+            exp.splitWith?.forEach((uid) => {
+              if (exp.paid?.[uid]) {
+                paid += share;
+              }
+            });
           });
-        });
   
         setGroupTotals({
           total,
@@ -58,6 +61,13 @@ export default function GroupPage() {
     const handleFormChange = (e) => {
       setForm({ ...form, [e.target.name]: e.target.value });
     };
+
+    const yourOwed = expenses.reduce((sum, exp) => {
+        if (exp.splitWith.includes(currentUser.uid) && !exp.paid?.[currentUser.uid]) {
+          return sum + parseFloat(exp.amount) / exp.splitWith.length;
+        }
+        return sum;
+      }, 0);
 
     const startEdit = (exp) => {
         setEditingId(exp.id);
@@ -161,6 +171,8 @@ export default function GroupPage() {
           </select>
           <button type="submit">Add</button>
         </form>
+
+        <p><strong>You Still Owe:</strong> ${yourOwed.toFixed(2)}</p>
   
         <label>
           <input

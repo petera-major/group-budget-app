@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, deleteDoc } from "firebase/firestore";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -23,6 +23,24 @@ export default function Dashboard() {
     setGroups(data);
   };
 
+  const handleDeleteGroup = async (groupId) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this group? This will also remove all related expenses.");
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDoc(doc(db, "groups", groupId));
+
+      const q = query(collection(db, "expenses"), where("groupId", "==", groupId));
+      const snap = await getDocs(q);
+      const deletePromises = snap.docs.map((docRef) => deleteDoc(docRef.ref));
+      await Promise.all(deletePromises);
+
+      fetchUserGroups();
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+    }
+  };
+
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((user) => {
       if (!user) {
@@ -41,8 +59,8 @@ export default function Dashboard() {
 
       <div className="dashboard-buttons">
         <button onClick={() => navigate("/create-group")}>➕ Create Group</button>
-        <button onClick={() => navigate("/join-group")}> Join Group</button>
-        <button onClick={handleLogout}> Logout</button>
+        <button onClick={() => navigate("/join-group")}>Join Group</button>
+        <button onClick={handleLogout}>Logout</button>
       </div>
 
       <h3>Your Groups:</h3>
@@ -51,8 +69,13 @@ export default function Dashboard() {
       ) : (
         <ul>
           {groups.map((group) => (
-            <li key={group.id} onClick={() => navigate(`/group/${group.id}`)}>
-              {group.name} — Code: {group.groupCode}
+            <li key={group.id}>
+              <span onClick={() => navigate(`/group/${group.id}`)} style={{ cursor: "pointer" }}>
+                {group.name} — Code: {group.groupCode}
+              </span>
+              <button onClick={() => handleDeleteGroup(group.id)} style={{ marginLeft: "10px" }}>
+                🗑️
+              </button>
             </li>
           ))}
         </ul>

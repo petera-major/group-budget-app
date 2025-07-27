@@ -2,6 +2,7 @@ import { useState } from "react";
 import { db, auth } from "../firebase";
 import {collection, query, where, getDocs, doc, updateDoc, setDoc, arrayUnion} from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import "./JoinGroup.css";
 
 export default function JoinGroup() {
   const [codeInput, setCodeInput] = useState("");
@@ -13,7 +14,6 @@ export default function JoinGroup() {
     if (!currentUser) return alert("You must be logged in");
 
     try {
-      // this is the query for group code
       const q = query(collection(db, "groups"), where("groupCode", "==", codeInput.toUpperCase()));
       const querySnapshot = await getDocs(q);
 
@@ -43,7 +43,7 @@ export default function JoinGroup() {
   };
 
   return (
-    <div>
+    <div className="joingroup-form">
       <h2>Join an Existing Group</h2>
       <form onSubmit={handleJoin}>
         <input
